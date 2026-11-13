@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>REVE SPICY</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#101010;color:white;font-family:Tahoma,Arial}
+.hero{text-align:center;padding:35px 10px;background:radial-gradient(#542014,#101010)}
+.logo{font-size:75px}
+h1{font-size:38px}h1 span{color:#ff7817}
+.nav{position:sticky;top:0;background:#181818;padding:12px;display:flex;gap:8px;overflow:auto;z-index:5}
+button{cursor:pointer;font:inherit}
+.nav button{background:#29201d;color:white;border:1px solid #70402f;border-radius:20px;padding:10px;white-space:nowrap}
+.wrap{padding:15px;max-width:1100px;margin:auto}
+h2{border-bottom:2px solid #ff7817;padding-bottom:10px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.card{background:#24201e;border:1px solid #49352d;border-radius:14px;padding:12px}
+.food{font-size:38px;text-align:center;padding:15px}
+.card h3{font-size:16px}
+.price{color:#ff914b;font-weight:bold}
+.meta{display:flex;justify-content:space-between;font-size:12px;color:#bbb}
+.add,.qty button{background:#e5232e;color:white;border:0;border-radius:8px;padding:9px}
+.add{width:100%;margin-top:12px}
+.qty{display:flex;align-items:center;justify-content:center;gap:18px;margin-top:12px}
+.qty button{width:35px;font-size:20px}
+.cartbtn{position:fixed;bottom:18px;left:18px;z-index:8;background:#e5232e;color:white;border:0;border-radius:30px;padding:15px}
+#cart{display:none;position:fixed;inset:0;background:#000c;z-index:10}
+.drawer{background:#191514;color:white;position:absolute;left:0;top:0;height:100%;width:min(440px,100%);padding:18px;overflow:auto}
+.cartline{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #554;padding:12px 0;gap:8px}
+.total{font-size:24px;color:#ff914b}
+.invoice{background:white;color:#111;padding:15px;margin-top:15px;border-radius:10px}
+.invoice table{width:100%;border-collapse:collapse}
+.invoice td,.invoice th{padding:8px;border-bottom:1px solid #ddd;text-align:right}
+@media(max-width:500px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.card{padding:9px}}
+</style>
+</head>
+<body>
+
+<header class="hero">
+<div class="logo">🌶️</div>
+<h1>REVE <span>SPICY</span></h1>
+<p>أهلاً بكم في عالم النكهة الحارة</p>
+</header>
+
+<nav class="nav" id="nav"></nav>
+<main class="wrap" id="menu"></main>
+
+<button class="cartbtn" onclick="openCart()">🛒 السلة (<span id="count">0</span>)</button>
+
+<div id="cart">
+<div class="drawer">
+<h2>سلة المشتريات</h2>
+<button onclick="closeCart()">إغلاق ✕</button>
+<div id="items"></div>
+<hr>
+<p>عدد القطع: <b id="pieces">0</b></p>
+<p class="total">الإجمالي: <span id="total">0</span> ريال</p>
+<button class="add" onclick="invoice()">عرض الفاتورة</button>
+<div id="bill"></div>
+</div>
+</div>
+
+<script>
+const menuData=[
+["الدجاج والأرز والمكرونة",[
+["برياني دجاج",48,550],["برياني 65",48,550],["برياني روبيان",48,500],["مقلوبة برياني",48,550],["مقلوبة بشاور",48,550],["مكرونة دجاج",40,450],["دجاج مضغوط",40,500],["دجاج مقلي",40,400],["دجاج فحم",40,450],["أوصال دجاج",40,450],["نفر رز برياني",8,250],["نفر رز بشاور",7,230]]],
+["الإيدامات",[
+["إيدام 65",30,200],["إيدام ماسالا",30,200],["إيدام مسحب",30,220],["إيدام صاج",30,200],["إيدام صاج زبدة",30,250],["كورا دجاج",30,350],["إيدام هندي",30,180],["إيدام دجاج بالبطاطس",30,250],["إيدام مسحب زبدة",30,300],["إيدام كراي باكستاني",30,220],["إيدام جمبري ماسالا",40,280]]],
+["الخبز والمشروبات",[
+["خبز هندي",1,120],["خبز تنور",1,120],["حمضيات",3,150],["بيبسي",3,140],["ماء",1,0]]],
+["المقبلات والسلطات",[
+["عدس",7,130],["مشكل فرن",15,180],["مقطع",15,200],["سلطة خضراء",5,35],["سلطة حارة",5,40],["سلطة خيار زبادي",8,100]]],
+["وجبات إضافية",[
+["سمك مقلي",25,350],["وجبة برجر",20,500],["وجبة ناجت",15,300],["بطاطا مقلي",5,250]]]
+];
+
+let cart={};
+const nav=document.getElementById("nav");
+const menu=document.getElementById("menu");
+
+function render(){
+nav.innerHTML=menuData.map((g,i)=><button onclick="go(${i})">${g[0]}</button>).join("");
+menu.innerHTML=menuData.map((g,i)=>`
+<section id="s${i}">
+<h2>${g[0]}</h2>
+<div class="grid">
+${g[1].map((p,j)=>card(i,j,p)).join("")}
+</div>
+</section>`).join("");
+}
+
+function card(i,j,p){
+let id=i+"-"+j,q=cart[id]||0;
+return `<article class="card">
+<div class="food">🌶️</div>
+<h3>${p[0]}</h3>
+<div class="meta"><span>${p[2]} kcal</span><span class="price">${p[1]} ريال</span></div>
+${q?<div class="qty"><button onclick="change('${id}',-1)">−</button><b>${q}</b><button onclick="change('${id}',1)">+</button></div>:
+<button class="add" onclick="change('${id}',1)">+ إضافة للسلة</button>}
+</article>`;
+}
+
+function go(i){
+document.getElementById("s"+i).scrollIntoView({behavior:"smooth"});
+}
+
+function change(id,n){
+cart[id]=(cart[id]||0)+n;
+if(cart[id]<=0)delete cart[id];
+render();update();
+}
+
+function update(){
+let total=0,pieces=0,html="";
+menuData.forEach((g,i)=>g[1].forEach((p,j)=>{
+let q=cart[i+"-"+j];
+if(q){
+total+=p[1]*q;pieces+=q;
+html+=`<div class="cartline">
+<span>${p[0]}<br>${p[1]} × ${q}</span>
+<div class="qty">
+<button onclick="change('${i}-${j}',-1)">−</button>
+<b>${q}</b>
+<button onclick="change('${i}-${j}',1)">+</button>
+</div></div>`;
+}
+}));
+document.getElementById("count").textContent=pieces;
+document.getElementById("pieces").textContent=pieces;
+document.getElementById("total").textContent=total;
+document.getElementById("items").innerHTML=html||"السلة فارغة";
+document.getElementById("bill").innerHTML="";
+}
+
+function openCart(){document.getElementById("cart").style.display="block"}
+function closeCart(){document.getElementById("cart").style.display="none"}
+
+function invoice(){
+let total=0,rows="";
+menuData.forEach((g,i)=>g[1].forEach((p,j)=>{
+let q=cart[i+"-"+j];
+if(q){let sub=q*p[1];total+=sub;
+rows+=<tr><td>${p[0]}</td><td>${q}</td><td>${p[1]}</td><td>${sub}</td></tr>;}
+}));
+if(!rows){alert("السلة فارغة");return}
+document.getElementById("bill").innerHTML=`
+<div class="invoice">
+<h3>REVE SPICY - الفاتورة</h3>
+<table><tr><th>الصنف</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th></tr>
+${rows}</table>
+<h3>الإجمالي: ${total} ريال</h3>
+<button class="add" onclick="window.print()">طباعة الفاتورة / PDF</button>
+</div>`;
+}
+render();update();
+</script>
+</body>
+</html>
